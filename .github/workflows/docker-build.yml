@@ -34,15 +34,15 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ~/infra-deploy
-            echo "🛑 Stopping running containers..."
-            docker-compose down
+            cd ~/infra-k8s
 
-            echo "🛑 cleaning the cache"
-            docker image prune -a -f
+            echo "🧭 Updating app manifests"
+            kubectl apply -f infra-k8s/
+            kubectl rollout restart deploy -n infra
 
-            echo "⬇️ Pulling latest image from Docker Hub..."
-            docker-compose pull
+            echo "📈 Upgrading Helm releases"
+            helm upgrade kps prometheus-community/kube-prometheus-stack -n monitoring --reuse-values
+            helm upgrade traefik traefik/traefik -n kube-system --reuse-values
 
-            echo "🚀 Starting containers..."
-            docker-compose up -d
+            echo "✅ Checking all pods"
+            kubectl get pods -A
